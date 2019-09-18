@@ -43,6 +43,13 @@ function update(tick) {
         gameState.score += 1;
         gameState.time += 1;
     }
+
+    if (Math.trunc(gameState.lastTick / 30000) > gameState.speedUpTime)
+    {
+        gameState.ball.vx *= 1.1;
+        gameState.ball.vy *= 1.1;
+        gameState.speedUpTime += 1;
+    }
     
 	
 	if (gameState.ball.y + gameState.ball.radius > canvas.height)
@@ -124,6 +131,7 @@ function setup() {
     gameState.tickLength = 15; //ms
     gameState.score = 0;
     gameState.time = 0;
+    gameState.speedUpTime = 0;
 
     const platform = {
         width: 400,
@@ -147,6 +155,17 @@ function setup() {
         vx: -10,
         vy: 5
     };
+    gameState.bonus = {
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        vert_width: 10,
+        vert_height: 30,
+        hor_width: 30,
+        hor_height: 10,
+        visible: false
+    }
 }
 
 setup();
