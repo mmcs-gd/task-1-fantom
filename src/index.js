@@ -24,6 +24,9 @@ function draw(tFrame) {
     drawPlatform(context)
     drawBall(context)
 
+    if(gameState.bonus.visible === true)
+        drawBonus(context);
+
 }
 
 function update(tick) {
@@ -34,14 +37,31 @@ function update(tick) {
     const ball = gameState.ball
     ball.y += ball.vy
     ball.x += ball.vx
+
+    if(gameState.bonus.visible)
+    {
+        gameState.bonus.x += gameState.bonus.vx    
+        gameState.bonus.y += gameState.bonus.vy
+    }
 	
 	checkBounds()
     checkBoard()    
+    //checkBonusCollision()
+
+    if (gameState.bonus.visible == true && checkBonusCollision()){
+        gameState.score += 15;
+    }
 
     if(Math.trunc(gameState.lastTick / 1000) > gameState.time)
     {
         gameState.score += 1;
         gameState.time += 1;
+    }
+
+    if (Math.trunc(gameState.lastTick / 5000) > gameState.bonusTime)
+    {
+        createBonus();
+        gameState.bonusTime += 1;
     }
 
     if (Math.trunc(gameState.lastTick / 30000) > gameState.speedUpTime)
@@ -97,7 +117,6 @@ function drawScore(context){
 	context.font = "30px Georgia";
 	context.fillStyle = "#000000";
     context.fillText("score: " + gameState.score, 25, 25);
-	//context.fill();
 }
 
 function checkBounds(){
@@ -118,7 +137,83 @@ function checkBoard(){
 		gameState.ball.vx *= -1;
 }
 
+function createBonus() {
+    gameState.bonus.x = Math.floor(Math.random() * (canvas.width - gameState.bonus.hor_width));
+    gameState.bonus.y = Math.floor(Math.random() * canvas.height / 3);
+    gameState.bonus.vx = (Math.random() >= 0.5) ? 2*(2 + Math.random()) : -2*(2 + Math.random());
+    gameState.bonus.vy = (2+Math.random()) * 2;
+    gameState.bonus.visible = true;
+}
 
+function deleteBonus() {
+    gameState.bonus.visible = false;
+}
+
+function drawBonus(context) {
+    context.beginPath();
+    const x = gameState.bonus.x
+    const y = gameState.bonus.y
+    const hor_width = gameState.bonus.hor_width
+    const hor_height = gameState.bonus.hor_height
+    context.rect(x - hor_width / 2, y - hor_height / 2, hor_width, hor_height)
+    context.fillStyle = "#FF0000"
+    context.fill()
+    context.closePath()
+
+
+    context.beginPath();
+    const vert_width = gameState.bonus.vert_width
+    const vert_height = gameState.bonus.vert_height
+    context.rect(x - vert_width / 2, y - vert_height / 2, vert_width, vert_height)
+    context.fillStyle = "#FF0000"
+    context.fill()
+    context.closePath()
+}
+
+
+function checkBonusCollision() {
+    if((gameState.player.x - gameState.player.width / 2) <= (gameState.bonus.x - gameState.bonus.vert_width / 2)
+    && (gameState.player.x + gameState.player.width / 2) >= (gameState.bonus.x - gameState.bonus.vert_width / 2)
+    && (gameState.player.y - gameState.player.height / 2) <= (gameState.bonus.y + gameState.bonus.vert_height / 2))
+    {
+        deleteBonus();
+        return true;
+    }
+    //collision bonus with platform right
+    if((gameState.player.x + gameState.player.width / 2) >= (gameState.bonus.x - gameState.bonus.hor_width / 2)
+    && (gameState.player.x - gameState.player.width / 2) <= (gameState.bonus.x + gameState.bonus.hor_width / 2)
+    && (gameState.player.y + gameState.player.height / 2) >= (gameState.bonus.y + gameState.bonus.hor_height / 2)
+    && (gameState.player.y - gameState.player.height / 2) <= (gameState.bonus.y + gameState.bonus.hor_height / 2))
+    {
+        deleteBonus();
+        return false;
+    }
+
+    //collision bonus with platform left
+    if((gameState.player.x - gameState.player.width / 2) <= (gameState.bonus.x + gameState.bonus.hor_width / 2)
+    && (gameState.player.x + gameState.player.width / 2) >= (gameState.bonus.x - gameState.bonus.hor_width / 2)
+    && (gameState.player.y + gameState.player.height / 2) >= (gameState.bonus.y + gameState.bonus.hor_height / 2)
+    && (gameState.player.y - gameState.player.height / 2) <= (gameState.bonus.y + gameState.bonus.hor_height / 2))
+    {
+        deleteBonus();
+        return false;
+    }
+
+    if((gameState.bonus.y + gameState.bonus.vert_height / 2) >= canvas.height)
+    {
+        deleteBonus();
+        return false;
+    }
+
+    if((gameState.bonus.x + gameState.bonus.hor_width / 2) >= canvas.width 
+    || (gameState.bonus.x - gameState.bonus.hor_width / 2) <= 0)
+    {
+        gameState.bonus.vx *= -1;
+        return false;
+    }
+
+    return false;
+}
 
 function setup() {
     canvas.width = window.innerWidth;
@@ -132,6 +227,7 @@ function setup() {
     gameState.score = 0;
     gameState.time = 0;
     gameState.speedUpTime = 0;
+    gameState.bonusTime = 0;
 
     const platform = {
         width: 400,
